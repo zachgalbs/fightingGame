@@ -1,7 +1,8 @@
 const canvas = document.querySelector('canvas');
 const c = canvas.getContext('2d');
 const gravity = 0.004 * canvas.height;
-const baseSpeed = 0.05 * canvas.width;
+const baseSpeed = 0.03 * canvas.width;
+const jumpSpeed = 0.04 * canvas.width;
 const maxSpeed = 0.90 * canvas.height;
 
 // set the margin value defined in css
@@ -42,17 +43,11 @@ class Sprite {
 
     update(deltaTime) {
         // Scale movement by delta time
-        console.log(deltaTime);
         this.velocity.y += gravity * deltaTime * 30;
 
         // Apply velocity to position
         this.position.y += this.velocity.y * deltaTime;
         this.position.x += this.velocity.x * deltaTime;
-        
-        // Limit speed
-        //if (this.velocity.y > maxSpeed) {
-        //    this.velocity.y = maxSpeed;
-        //}
     
         // Apply velocity to position
         this.position.y += this.velocity.y;
@@ -66,7 +61,7 @@ class Sprite {
     
         // Jumping
         if (keys[this.keyBindings.up] && this.position.y + playerHeight >= canvas.height) {
-            this.velocity.y = -baseSpeed; // jump speed
+            this.velocity.y = -jumpSpeed; // jump speed
         }
 
         // Moving down faster
@@ -103,8 +98,6 @@ class Sprite {
             // check if the player has its sword out, if it does, set the playerSword position
             playerSword.position.y = player.position.y;
             playerSword.position.x = player.position.x + playerWidth * multiplier;
-            console.log("player position: " + player.position.x);
-            console.log("player sword position: " + playerSword.position.x);
             if (checkIntersect(playerSword, enemy)) {
                 if (enemy.position.x < player.position.x) {
                     enemy.position.x -= 100;
@@ -124,8 +117,6 @@ class Sprite {
             c.fillRect(enemy.position.x, enemy.position.y, playerWidth * multiplier, playerHeight / 2)
             // check if the enemy has its sword out, if it does, set the enemySword position
             enemySword.position.y = enemy.position.y;
-            console.log("enemy position: " + enemy.position.x);
-            console.log("enemy sword position: " + enemySword.position.x);
             enemySword.position.x = enemy.position.x + playerWidth * multiplier;
             if (checkIntersect(enemySword, player)) {
                 if (player.position.x < enemy.position.x) {
@@ -139,14 +130,19 @@ class Sprite {
             }
         }
 
-        // Stop the friction when off the map
-        if (this.position.x < 0) {
-            this.velocity.x = 0;
-            this.position.x = 0;
+        // checking if player has touched the edge:
+        if (player.position.x < 0 || player.position.x + playerWidth > canvas.width) {
+            player.velocity.x = 0;
+            player.position.x < 0 ? player.position.x = 0 : player.position.x = canvas.width;
+            writeText("enemy wins!", "red");
+            resetGame();
         }
-        if (this.position.x + playerWidth > canvas.width) {
-            this.velocity.x = 0;
-            this.position.x = canvas.width - playerWidth;
+        //checking if enemy has touched the edge:
+        if (enemy.position.x < 0 || enemy.position.x + playerWidth > canvas.width) {
+            enemy.velocity.x = 0;
+            enemy.position.x < 0 ? enemy.position.x = 0 : enemy.position.x = canvas.width - playerWidth;
+            writeText("player wins!", "green");
+            resetGame();
         }
         // check for collision
         if (checkIntersect(player, enemy)) {
@@ -235,6 +231,15 @@ function animate(currentTime) {
     c.fillStyle = 'black';
     c.fillRect(0, 0, canvas.width, canvas.height);
 
+    //Display the winning text if showText is true
+
+    if (showText == true) {
+        c.fillStyle = textColor;
+        c.textAlign = "center";
+        c.font = "30px Arial";
+        c.fillText(textToDisplay, canvas.width / 2, canvas.height / 2);
+    }
+
     // Calculate the amount of time since the last frame
     let deltaTime = (currentTime - lastTime) / 1000.0;
     lastTime = currentTime;
@@ -246,6 +251,32 @@ function animate(currentTime) {
     window.requestAnimationFrame(animate);
 }
 
+// set the win text varibles:
+let showText = false;
+let textToDisplay = "";
+let textColor = "";
+
+function writeText(text, color, time) {
+    if (time == null) {time = 2000}
+    showText = true;
+    textToDisplay = text;
+    textColor = color;
+    setTimeout(function() {
+        showText = false;
+        textToDisplay = "";
+    }, time);
+}
+
+function resetGame() {
+    player.position.x = 0;
+    player.velocity.x = 0;
+    player.position.y = 700;
+    player.velocity.y = 0;
+    enemy.position.x = canvas.width - playerWidth;
+    enemy.velocity.x = 0;
+    enemy.position.y = 700;
+    enemy.velocity.y = 0;
+}
 // Start the game loop
 window.requestAnimationFrame(animate);
 
