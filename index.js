@@ -257,14 +257,16 @@ let textToDisplay = "";
 let textColor = "";
 
 function writeText(text, color, time) {
-    if (time == null) {time = 2000}
-    showText = true;
-    textToDisplay = text;
-    textColor = color;
-    setTimeout(function() {
-        showText = false;
-        textToDisplay = "";
-    }, time);
+    if (showText == false) {
+        if (time == null) {time = 2000}
+        showText = true;
+        textToDisplay = text;
+        textColor = color;
+        setTimeout(function() {
+            showText = false;
+            textToDisplay = "";
+        }, time);
+    }
 }
 
 function resetGame() {
@@ -276,6 +278,21 @@ function resetGame() {
     enemy.velocity.x = 0;
     enemy.position.y = 700;
     enemy.velocity.y = 0;
+
+    // setting a timeout, waiting for existing text to disappear
+    // absolute monstrosity... yikes
+    setTimeout(() => {
+        writeText("3", "white", 1000);
+        setTimeout(() => {
+            writeText("2", "white", 1000);
+            setTimeout(() => {
+                writeText("1", "white", 1000);
+                setTimeout(() => {
+                    writeText("Fight!", "red", 1000);
+                }, 1000);
+            }, 1000);
+        }, 1000);
+    }, 2000);
 }
 // Start the game loop
 window.requestAnimationFrame(animate);
