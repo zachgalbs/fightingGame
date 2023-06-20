@@ -5,6 +5,10 @@ const baseSpeed = 0.03 * canvas.width;
 const jumpSpeed = 0.04 * canvas.width;
 const maxSpeed = 0.90 * canvas.height;
 
+let gamePaused = false;
+let playerScore = 0;
+let enemyScore = 0;
+
 // set the margin value defined in css
 margin = 20;
 
@@ -73,14 +77,16 @@ class Sprite {
         }
     
         // Move left and right
-        if (keys[this.keyBindings.left]) {
-            if (this.position.x > 0 && !checkIntersect(player, enemy)) {
-                this.velocity.x = -baseSpeed;
+        if (gamePaused == false) {
+            if (keys[this.keyBindings.left]) {
+                if (this.position.x > 0 && !checkIntersect(player, enemy)) {
+                    this.velocity.x = -baseSpeed;
+                }
             }
-        }
-        if (keys[this.keyBindings.right] && !checkIntersect(player, enemy)) {
-            if (this.position.x + playerWidth < canvas.width) {
-                this.velocity.x = baseSpeed;
+            if (keys[this.keyBindings.right] && !checkIntersect(player, enemy)) {
+                if (this.position.x + playerWidth < canvas.width) {
+                    this.velocity.x = baseSpeed;
+                }
             }
         }
         // Attack
@@ -136,12 +142,14 @@ class Sprite {
             player.position.x < 0 ? player.position.x = 0 : player.position.x = canvas.width;
             writeText("enemy wins!", "red");
             resetGame();
+            enemyScore++
         }
         //checking if enemy has touched the edge:
         if (enemy.position.x < 0 || enemy.position.x + playerWidth > canvas.width) {
             enemy.velocity.x = 0;
             enemy.position.x < 0 ? enemy.position.x = 0 : enemy.position.x = canvas.width - playerWidth;
             writeText("player wins!", "green");
+            playerScore++
             resetGame();
         }
         // check for collision
@@ -230,7 +238,12 @@ let lastTime = 0;
 function animate(currentTime) {
     c.fillStyle = 'black';
     c.fillRect(0, 0, canvas.width, canvas.height);
-
+    // setting the score
+    c.fillStyle = 'white';
+    c.font = "30px Arial";
+    c.fillText(playerScore, 25, 50);
+    c.fillText("|", 60, 48);
+    c.fillText(enemyScore, 90, 50);
     //Display the winning text if showText is true
 
     if (showText == true) {
@@ -238,6 +251,7 @@ function animate(currentTime) {
         c.textAlign = "center";
         c.font = "30px Arial";
         c.fillText(textToDisplay, canvas.width / 2, canvas.height / 2);
+        c.textAlign = "start"; // Reset text alignment back to "start"
     }
 
     // Calculate the amount of time since the last frame
@@ -256,6 +270,10 @@ let showText = false;
 let textToDisplay = "";
 let textColor = "";
 
+function updateScore() {
+
+}
+
 function writeText(text, color, time) {
     if (showText == false) {
         if (time == null) {time = 2000}
@@ -270,6 +288,7 @@ function writeText(text, color, time) {
 }
 
 function resetGame() {
+    gamePaused = true;
     player.position.x = 0;
     player.velocity.x = 0;
     player.position.y = 700;
@@ -289,11 +308,15 @@ function resetGame() {
                 writeText("1", "white", 1000);
                 setTimeout(() => {
                     writeText("Fight!", "red", 1000);
+                    gamePaused = false;
                 }, 1000);
             }, 1000);
         }, 1000);
     }, 2000);
 }
+
+
+
 // Start the game loop
 window.requestAnimationFrame(animate);
 
