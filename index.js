@@ -8,7 +8,6 @@ const maxSpeed = 0.90 * canvas.height;
 let gamePaused = false;
 let playerScore = 0;
 let enemyScore = 0;
-
 // set the margin value defined in css
 margin = 20;
 
@@ -33,11 +32,14 @@ window.addEventListener('keyup', function(event) {
 });
 
 class Sprite {
-    constructor({position, velocity, keyBindings, color}) {
+    constructor({position, velocity, keyBindings, color, width, height, latestDir}) {
         this.position = position;
         this.velocity = velocity;
         this.keyBindings = keyBindings;
         this.color = color;
+        this.width = width || playerWidth;
+        this.height = height || playerHeight;
+        this.latestDir = latestDir;
     }
 
     draw() {
@@ -79,31 +81,29 @@ class Sprite {
         // Move left and right
         if (gamePaused == false) {
             if (keys[this.keyBindings.left]) {
+                this.latestDir = "left";
                 if (this.position.x > 0 && !checkIntersect(player, enemy)) {
                     this.velocity.x = -baseSpeed;
                 }
             }
             if (keys[this.keyBindings.right] && !checkIntersect(player, enemy)) {
+                this.latestDir = "right";
                 if (this.position.x + playerWidth < canvas.width) {
                     this.velocity.x = baseSpeed;
                 }
             }
         }
         // Attack
-        let multiplier = 1;
         if (keys[player.keyBindings.attack]) {
-            // if player is on the right side,
-            if (player.velocity.x >= 0) {
-                c.fillRect(player.position.x, player.position.y, playerWidth * multiplier, playerHeight / 2);
-            }
-            else if (player.velocity.x < 0) {
-
-            }
-            // draw gray sword
             c.fillStyle = playerSword.color;
-            // check if the player has its sword out, if it does, set the playerSword position
+            playerSword.position.x = player.position.x 
             playerSword.position.y = player.position.y;
-            playerSword.position.x = player.position.x + playerWidth * multiplier;
+            if (player.latestDir == "right") {
+                c.fillRect(playerSword.position.x + playerWidth, playerSword.position.y, playerWidth, playerHeight / 2)
+            }
+            else {
+                c.fillRect(playerSword.position.x - playerWidth, playerSword.position.y, playerWidth, playerHeight / 2)
+            }
             if (checkIntersect(playerSword, enemy)) {
                 if (enemy.position.x < player.position.x) {
                     enemy.position.x -= 100;
@@ -116,16 +116,17 @@ class Sprite {
             }
         }
         if (keys[enemy.keyBindings.attack]) {
-            if (enemy.velocity.x >= 0) {multiplier = 2;}
-            else {multiplier = -1;}
-            // draw gray sword
             c.fillStyle = playerSword.color;
-            c.fillRect(enemy.position.x, enemy.position.y, playerWidth * multiplier, playerHeight / 2)
-            // check if the enemy has its sword out, if it does, set the enemySword position
-            enemySword.position.y = enemy.position.y;
-            enemySword.position.x = enemy.position.x + playerWidth * multiplier;
+            enemySword.position.x = enemy.position.x;
+            enemySword.position.y = enemy.position.y
+            if (enemy.latestDir == "right") {
+                c.fillRect(enemySword.position.x + playerWidth, enemySword.position.y, playerWidth, playerHeight / 2)
+            }
+            else {
+                c.fillRect(enemySword.position.x - playerWidth, enemySword.position.y, playerWidth, playerHeight / 2);
+            }
             if (checkIntersect(enemySword, player)) {
-                if (player.position.x < enemy.position.x) {
+                if (player.position.x + playerWidth < enemy.position.x) {
                     player.position.x -= 100;
                     player.velocity.x -= 10;
                 }
@@ -188,7 +189,8 @@ const player = new Sprite({
         right: 'd',
         attack: 'f'
     },
-    color: 'green'
+    color: 'green',
+    latestDir: 'right'
 });
 
 const enemy = new Sprite({
@@ -207,15 +209,22 @@ const enemy = new Sprite({
         right: ';',
         attack: 'j'
     },
-    color: 'red'
+    color: 'red',
+    latestDir: 'left'
 });
 
 const playerSword = new Sprite( {
     position: { 
+        x: -1,
+        y: -1
+    },
+    velocity: {
         x: 0,
         y: 0
     },
-    color: 'gray'
+    color: 'gray',
+    width: playerWidth,
+    height: playerHeight / 2
 });
 
 const enemySword = new Sprite( {
@@ -223,14 +232,20 @@ const enemySword = new Sprite( {
         x: 0,
         y: 0
     },
-    color: 'gray'
+    velocity: {
+        x: 0,
+        y: 0
+    },
+    color: 'gray',
+    width: playerWidth,
+    height: playerHeight / 2
 });
 
 function checkIntersect(r1, r2) {
-    return !(r2.position.x > r1.position.x + playerWidth ||
-             r2.position.x + playerWidth < r1.position.x ||
-             r2.position.y > r1.position.y + playerHeight ||
-             r2.position.y + playerHeight < r1.position.y);
+    return !(r2.position.x >= r1.position.x + r1.width ||
+             r2.position.x + r2.width <= r1.position.x ||
+             r2.position.y >= r1.position.y + r1.height ||
+             r2.position.y + r2.height <= r1.position.y);
 }
 
 let lastTime = 0;
@@ -244,7 +259,6 @@ function animate(currentTime) {
     c.fillText(playerScore, 25, 50);
     c.fillText("|", 60, 48);
     c.fillText(enemyScore, 90, 50);
-    //Display the winning text if showText is true
 
     if (showText == true) {
         c.fillStyle = textColor;
@@ -269,10 +283,6 @@ function animate(currentTime) {
 let showText = false;
 let textToDisplay = "";
 let textColor = "";
-
-function updateScore() {
-
-}
 
 function writeText(text, color, time) {
     if (showText == false) {
