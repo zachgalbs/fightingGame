@@ -97,15 +97,17 @@ class Sprite {
         if (swordUpdate) {
             if (keys[player.keyBindings.attack]) {
                 c.fillStyle = playerSword.color;
-                playerSword.position.x = player.position.x 
                 playerSword.position.y = player.position.y;
                 if (player.latestDir == "right") {
-                    c.fillRect(playerSword.position.x + playerWidth, playerSword.position.y, playerWidth, playerHeight / 2)
+                    playerSword.position.x = player.position.x + playerWidth
+                    c.fillRect(playerSword.position.x, playerSword.position.y, playerWidth, playerHeight / 2)
                 }
                 else {
-                    c.fillRect(playerSword.position.x - playerWidth, playerSword.position.y, playerWidth, playerHeight / 2)
+                    playerSword.position.x = player.position.x - playerWidth
+                    c.fillRect(playerSword.position.x, playerSword.position.y, playerWidth, playerHeight / 2)
                 }
                 if (checkIntersect(playerSword, enemy)) {
+                    console.log("collision")
                     if (enemy.position.x < player.position.x) {
                         enemy.position.x -= 100;
                         enemy.velocity.x -= 10;
@@ -116,17 +118,32 @@ class Sprite {
                     }
                 }
             }
+            // juggling
+            if (keys[player.keyBindings.juggle]) {
+                c.fillStyle = playerSword.color;
+                c.fillRect(player.position.x, player.position.y, playerWidth, -playerHeight / 2);
+                console.log(player.position.y - playerHeight * 1.5)
+                console.log(enemy.position.)
+                if (enemy.position.y + playerHeight >= player.position.y - playerHeight * 1.5 &&
+                    enemy.position.x + playerWidth >= player.position.x &&
+                    enemy.position.x <= player.position.x + playerWidth) {
+                        enemy.position.y -= 20;
+                        enemy.velocity.y -= 20;
+                    }
+            }
             if (keys[enemy.keyBindings.attack]) {
                 c.fillStyle = playerSword.color;
-                enemySword.position.x = enemy.position.x;
                 enemySword.position.y = enemy.position.y
                 if (enemy.latestDir == "right") {
-                    c.fillRect(enemySword.position.x + playerWidth, enemySword.position.y, playerWidth, playerHeight / 2)
+                    enemySword.position.x = enemy.position.x + playerWidth;
+                    c.fillRect(enemySword.position.x, enemySword.position.y, playerWidth, playerHeight / 2)
                 }
                 else {
-                    c.fillRect(enemySword.position.x - playerWidth, enemySword.position.y, playerWidth, playerHeight / 2);
+                    enemySword.position.x = enemy.position.x - playerWidth;
+                    c.fillRect(enemySword.position.x, enemySword.position.y, playerWidth, playerHeight / 2);
                 }
                 if (checkIntersect(enemySword, player)) {
+                    console.log("collision!")
                     if (player.position.x + playerWidth < enemy.position.x) {
                         player.position.x -= 100;
                         player.velocity.x -= 10;
@@ -138,6 +155,8 @@ class Sprite {
                 }
             }
         }
+        // Juggling
+
 
         // checking if player has touched the edge:
         if (player.position.x < 0 || player.position.x + playerWidth > canvas.width) {
@@ -189,7 +208,8 @@ const player = new Sprite({
         down: 's',
         left: 'a',
         right: 'd',
-        attack: 'f'
+        attack: 'f',
+        juggle: 'e'
     },
     color: 'green',
     latestDir: 'right'
@@ -209,7 +229,8 @@ const enemy = new Sprite({
         down: 'l',
         left: 'k',
         right: ';',
-        attack: 'j'
+        attack: 'j',
+        juggle: 'i'
     },
     color: 'red',
     latestDir: 'left'
@@ -326,8 +347,6 @@ function resetGame() {
         }, 1000);
     }, 2000);
 }
-
-
 
 // Start the game loop
 window.requestAnimationFrame(animate);
