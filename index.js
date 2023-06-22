@@ -2,7 +2,7 @@ const canvas = document.querySelector('canvas');
 const c = canvas.getContext('2d');
 const gravity = 0.004 * canvas.height;
 const baseSpeed = 0.03 * canvas.width;
-const jumpSpeed = 0.04 * canvas.width;
+const jumpSpeed = 0.05 * canvas.width;
 const maxSpeed = 0.90 * canvas.height;
 
 let gamePaused = false;
@@ -107,7 +107,6 @@ class Sprite {
                     c.fillRect(playerSword.position.x, playerSword.position.y, playerWidth, playerHeight / 2)
                 }
                 if (checkIntersect(playerSword, enemy)) {
-                    console.log("collision")
                     if (enemy.position.x < player.position.x) {
                         enemy.position.x -= 100;
                         enemy.velocity.x -= 10;
@@ -121,15 +120,35 @@ class Sprite {
             // juggling
             if (keys[player.keyBindings.juggle]) {
                 c.fillStyle = playerSword.color;
-                c.fillRect(player.position.x, player.position.y, playerWidth, -playerHeight / 2);
-                console.log(player.position.y - playerHeight * 1.5)
-                console.log(enemy.position.)
-                if (enemy.position.y + playerHeight >= player.position.y - playerHeight * 1.5 &&
+                c.fillRect(player.position.x, player.position.y, playerWidth, -playerHeight/2);
+                if (
+                    // enemy is next to player
                     enemy.position.x + playerWidth >= player.position.x &&
-                    enemy.position.x <= player.position.x + playerWidth) {
+                    enemy.position.x <= player.position.x + playerWidth &&
+                    // enemy's bottom is lower than swords tip
+                    enemy.position.y + playerHeight >= player.position.y - playerHeight/2
+                    ) {
+                    // if enemy's bottom is not too low
+                    if (enemy.position.y + playerHeight <= player.position.y - playerHeight * 0.4) {
                         enemy.position.y -= 20;
-                        enemy.velocity.y -= 20;
+                        enemy.velocity.y -= 30;
                     }
+                    /*else {
+                        console.log(enemy.velocity.x)
+                        if (enemy.velocity.x > 0) {
+                            console.log("GO LEFT!!")
+                            enemy.position.x -= 50;
+                            //enemy.velocity.x = -20;
+                            enemy.velocity.y = 1;
+                        }
+                        if (enemy.velocity.x < 0) {
+                            console.log("bruh")
+                            enemy.position.x += 50;
+                            //enemy.velocity.x = 20;
+                            enemy.velocity.y = 1;
+                        } 
+                    }*/
+                }
             }
             if (keys[enemy.keyBindings.attack]) {
                 c.fillStyle = playerSword.color;
@@ -143,7 +162,6 @@ class Sprite {
                     c.fillRect(enemySword.position.x, enemySword.position.y, playerWidth, playerHeight / 2);
                 }
                 if (checkIntersect(enemySword, player)) {
-                    console.log("collision!")
                     if (player.position.x + playerWidth < enemy.position.x) {
                         player.position.x -= 100;
                         player.velocity.x -= 10;
@@ -155,7 +173,6 @@ class Sprite {
                 }
             }
         }
-        // Juggling
 
 
         // checking if player has touched the edge:
@@ -218,7 +235,7 @@ const player = new Sprite({
 const enemy = new Sprite({
     position: {
         x: canvas.width - playerWidth,
-        y: canvas.height - playerHeight
+        y: canvas.width - playerHeight
     },
     velocity: {
         x: 0,
