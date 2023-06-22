@@ -47,7 +47,7 @@ class Sprite {
         c.fillRect(this.position.x, this.position.y, playerWidth, playerHeight);
     }
 
-    update(deltaTime) {
+    update(deltaTime, swordUpdate) {
         // Scale movement by delta time
         this.velocity.y += gravity * deltaTime * 30;
 
@@ -94,45 +94,47 @@ class Sprite {
             }
         }
         // Attack
-        if (keys[player.keyBindings.attack]) {
-            c.fillStyle = playerSword.color;
-            playerSword.position.x = player.position.x 
-            playerSword.position.y = player.position.y;
-            if (player.latestDir == "right") {
-                c.fillRect(playerSword.position.x + playerWidth, playerSword.position.y, playerWidth, playerHeight / 2)
-            }
-            else {
-                c.fillRect(playerSword.position.x - playerWidth, playerSword.position.y, playerWidth, playerHeight / 2)
-            }
-            if (checkIntersect(playerSword, enemy)) {
-                if (enemy.position.x < player.position.x) {
-                    enemy.position.x -= 100;
-                    enemy.velocity.x -= 10;
+        if (swordUpdate) {
+            if (keys[player.keyBindings.attack]) {
+                c.fillStyle = playerSword.color;
+                playerSword.position.x = player.position.x 
+                playerSword.position.y = player.position.y;
+                if (player.latestDir == "right") {
+                    c.fillRect(playerSword.position.x + playerWidth, playerSword.position.y, playerWidth, playerHeight / 2)
                 }
-                if (enemy.position.x > player.position.x) {
-                    enemy.position.x += 100;
-                    enemy.velocity.x += 10;
+                else {
+                    c.fillRect(playerSword.position.x - playerWidth, playerSword.position.y, playerWidth, playerHeight / 2)
+                }
+                if (checkIntersect(playerSword, enemy)) {
+                    if (enemy.position.x < player.position.x) {
+                        enemy.position.x -= 100;
+                        enemy.velocity.x -= 10;
+                    }
+                    if (enemy.position.x > player.position.x) {
+                        enemy.position.x += 100;
+                        enemy.velocity.x += 10;
+                    }
                 }
             }
-        }
-        if (keys[enemy.keyBindings.attack]) {
-            c.fillStyle = playerSword.color;
-            enemySword.position.x = enemy.position.x;
-            enemySword.position.y = enemy.position.y
-            if (enemy.latestDir == "right") {
-                c.fillRect(enemySword.position.x + playerWidth, enemySword.position.y, playerWidth, playerHeight / 2)
-            }
-            else {
-                c.fillRect(enemySword.position.x - playerWidth, enemySword.position.y, playerWidth, playerHeight / 2);
-            }
-            if (checkIntersect(enemySword, player)) {
-                if (player.position.x + playerWidth < enemy.position.x) {
-                    player.position.x -= 100;
-                    player.velocity.x -= 10;
+            if (keys[enemy.keyBindings.attack]) {
+                c.fillStyle = playerSword.color;
+                enemySword.position.x = enemy.position.x;
+                enemySword.position.y = enemy.position.y
+                if (enemy.latestDir == "right") {
+                    c.fillRect(enemySword.position.x + playerWidth, enemySword.position.y, playerWidth, playerHeight / 2)
                 }
-                if (player.position.x > enemy.position.x) {
-                    player.position.x += 100;
-                    player.velocity.x += 10;
+                else {
+                    c.fillRect(enemySword.position.x - playerWidth, enemySword.position.y, playerWidth, playerHeight / 2);
+                }
+                if (checkIntersect(enemySword, player)) {
+                    if (player.position.x + playerWidth < enemy.position.x) {
+                        player.position.x -= 100;
+                        player.velocity.x -= 10;
+                    }
+                    if (player.position.x > enemy.position.x) {
+                        player.position.x += 100;
+                        player.velocity.x += 10;
+                    }
                 }
             }
         }
@@ -273,8 +275,8 @@ function animate(currentTime) {
     lastTime = currentTime;
 
     // Pass deltaTime to your update methods
-    player.update(deltaTime);
-    enemy.update(deltaTime);
+    player.update(deltaTime, false);
+    enemy.update(deltaTime, true);
 
     window.requestAnimationFrame(animate);
 }
