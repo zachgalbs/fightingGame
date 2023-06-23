@@ -5,7 +5,7 @@ const c = canvas.getContext('2d');
 const gravity = 0.005 * canvas.height;
 const maxSpeed = 0.05 * canvas.width;
 const speedRate = 0.005 * canvas.width;
-const jumpSpeed = 0.2 * canvas.height;
+const jumpSpeed = 0.15 * canvas.height;
 
 const playerWidth = 50;
 const playerHeight = 150;
@@ -100,24 +100,26 @@ class Sprite {
         }
         // check for collision
         if (checkIntersect(this, this.opponent)) {
-            if (!collision) {
-                // if the collision is above the person, 
-                if (Math.abs(player.position.y - enemy.position.y) >= playerHeight - 5) {
-                    if (this.velocity.y <= 1 && this.position.y < this.opponent.position.y) {
-                        console.log("ran");
-                        this.velocity.y = 0;
-                    }
-                    else {
-                        this.velocity.y *= -1;
-                    }
+            console.log("COLLISION")
+            // if the collision is above the person, 
+            if (Math.abs(player.position.y - enemy.position.y) >= playerHeight - 5) {
+                if (this.velocity.y <= 1 && this.position.y < this.opponent.position.y) {
+                    console.log("ran");
+                    this.velocity.y = 0;
                 }
                 else {
-                    this.velocity.x *= -1.5;
+                    // making sure the players aren't inside of each other
+                    this.velocity.y *= -1;
                 }
-                collision = true;
             }
-        } else {
-            collision = false;
+            else {
+                console.log("run")
+                if (this.position.x > this.opponent.position.x) {
+                    console.log("bruh ran")
+                    this.position.x = this.opponent.position.x + playerWidth;
+                }
+                this.velocity.x *= -1.5;
+            }
         }
         this.draw();
     }
