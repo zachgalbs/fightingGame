@@ -3,7 +3,7 @@ const c = canvas.getContext('2d');
 const gravity = 0.004 * canvas.height;
 const baseSpeed = 0.03 * canvas.width;
 const jumpSpeed = 0.05 * canvas.width;
-const maxSpeed = 0.90 * canvas.height;
+const maxSpeed = 0.05 * canvas.height;
 
 let gamePaused = false;
 let playerScore = 0;
@@ -14,8 +14,8 @@ margin = 20;
 canvas.width = window.innerWidth - margin;
 canvas.height = window.innerHeight - margin;
 
-playerWidth = 50
-playerHeight = 150
+playerWidth = 50;
+playerHeight = 150;
 
 collision = false;
 
@@ -32,7 +32,7 @@ window.addEventListener('keyup', function(event) {
 });
 
 class Sprite {
-    constructor({position, velocity, keyBindings, color, width, height, latestDir}) {
+    constructor({position, velocity, keyBindings, color, width, height, latestDir, isOnTop, opponent}) {
         this.position = position;
         this.velocity = velocity;
         this.keyBindings = keyBindings;
@@ -40,6 +40,10 @@ class Sprite {
         this.width = width || playerWidth;
         this.height = height || playerHeight;
         this.latestDir = latestDir;
+        this.isOnTop = isOnTop;
+    }
+    setOpponent(opponent) {
+        this.opponent = opponent;
     }
 
     draw() {
@@ -49,7 +53,7 @@ class Sprite {
 
     update(deltaTime, swordUpdate) {
         // Scale movement by delta time
-        this.velocity.y += gravity * deltaTime * 30;
+        if (this.velocity.y < maxSpeed && this.isOnTop == false) {this.velocity.y += gravity * deltaTime * 30;}
 
         // Apply velocity to position
         this.position.y += this.velocity.y * deltaTime;
@@ -129,25 +133,10 @@ class Sprite {
                     enemy.position.y + playerHeight >= player.position.y - playerHeight/2
                     ) {
                     // if enemy's bottom is not too low
-                    if (enemy.position.y + playerHeight <= player.position.y - playerHeight * 0.4) {
+                    if (enemy.position.y + playerHeight <= player.position.y - playerHeight * 0.2) {
                         enemy.position.y -= 20;
                         enemy.velocity.y -= 30;
                     }
-                    /*else {
-                        console.log(enemy.velocity.x)
-                        if (enemy.velocity.x > 0) {
-                            console.log("GO LEFT!!")
-                            enemy.position.x -= 50;
-                            //enemy.velocity.x = -20;
-                            enemy.velocity.y = 1;
-                        }
-                        if (enemy.velocity.x < 0) {
-                            console.log("bruh")
-                            enemy.position.x += 50;
-                            //enemy.velocity.x = 20;
-                            enemy.velocity.y = 1;
-                        } 
-                    }*/
                 }
             }
             if (keys[enemy.keyBindings.attack]) {
@@ -194,9 +183,16 @@ class Sprite {
         // check for collision
         if (checkIntersect(player, enemy)) {
             if (!collision) {
-                if (Math.abs(player.position.y - enemy.position.y) >= playerHeight - 5 && this.velocity.y > 0) {
-                    player.velocity.y = player.velocity.y * -1;
-                    enemy.velocity.y = enemy.velocity.y * -1;
+                // if the collision is above the person, 
+                if (Math.abs(player.position.y - enemy.position.y) >= playerHeight - 5) {
+                    if (this.velocity.y <= 1 && this.position.y < this.opponent.position.y) {
+                        console.log("ran");
+                        this.velocity.y = 0;
+                        this.isOnTop = true;
+                    }
+                    else {
+                        this.velocity.y *= -1;
+                    }
                 }
                 else {
                     player.velocity.x = player.velocity.x * -2;
@@ -229,7 +225,8 @@ const player = new Sprite({
         juggle: 'e'
     },
     color: 'green',
-    latestDir: 'right'
+    latestDir: 'right',
+    isOnTop: false
 });
 
 const enemy = new Sprite({
@@ -250,8 +247,12 @@ const enemy = new Sprite({
         juggle: 'i'
     },
     color: 'red',
-    latestDir: 'left'
+    latestDir: 'left',
+    isOnTop: false
 });
+
+player.setOpponent(enemy);
+enemy.setOpponent(player);
 
 const playerSword = new Sprite( {
     position: { 
