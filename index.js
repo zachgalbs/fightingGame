@@ -1,27 +1,24 @@
-const canvas = document.querySelector('canvas');
+// CONSTANTS
+const canvas = document.getElementById('canvas');
 const c = canvas.getContext('2d');
-const gravity = 0.004 * canvas.height;
-const baseSpeed = 0.03 * canvas.width;
-const jumpSpeed = 0.05 * canvas.width;
-const maxSpeed = 0.05 * canvas.height;
 
-let gamePaused = false;
-let playerScore = 0;
-let enemyScore = 0;
-// set the margin value defined in css
-margin = 20;
+const gravity = 0.005 * canvas.height;
+const maxSpeed = 0.05 * canvas.width;
+const speedRate = 0.005 * canvas.width;
+const jumpSpeed = 0.2 * canvas.height;
 
-canvas.width = window.innerWidth - margin;
-canvas.height = window.innerHeight - margin;
+const playerWidth = 50;
+const playerHeight = 150;
 
-playerWidth = 50;
-playerHeight = 150;
+// VARIBALES
+let gameOver = false;
+let keys = {}
+let collision = false;
 
-collision = false;
-
-c.fillRect(0,0,canvas.width,canvas.height);
-
-let keys = {};
+// SETUP
+canvas.width = window.innerWidth - 20;
+canvas.height = window.innerHeight - 20;
+c.fillRect(0, 0, canvas.width, canvas.height);
 
 window.addEventListener('keydown', function(event) {
     keys[event.key] = true;
@@ -31,172 +28,91 @@ window.addEventListener('keyup', function(event) {
     keys[event.key] = false;
 });
 
+// This line calls the animate function, which then starts the game
+requestAnimationFrame(animate);
+
+// CLASSES
 class Sprite {
-    constructor({position, velocity, keyBindings, color, width, height, latestDir, isOnTop, opponent}) {
+    constructor({position, velocity, keyBindings, color, width, height, opponent, swordDir, score}) {
         this.position = position;
         this.velocity = velocity;
         this.keyBindings = keyBindings;
         this.color = color;
-        this.width = width || playerWidth;
-        this.height = height || playerHeight;
-        this.latestDir = latestDir;
-        this.isOnTop = isOnTop;
+        this.width = width;
+        this.height = height;
+        this.swordDir = swordDir;
+        this.score = score;
     }
     setOpponent(opponent) {
         this.opponent = opponent;
     }
 
     draw() {
-        c.fillStyle = this.color;
-        c.fillRect(this.position.x, this.position.y, playerWidth, playerHeight);
+        c.fillStyle = this.color
+        c.fillRect(this.position.x, this.position.y, this.width, this.height);
     }
 
-    update(deltaTime, swordUpdate) {
-        // Scale movement by delta time
-        if (this.velocity.y < maxSpeed && this.isOnTop == false) {this.velocity.y += gravity * deltaTime * 30;}
+    update(deltaTime) {
+        // Constant gravity
+        this.velocity.y += gravity * deltaTime * 30;
 
-        // Apply velocity to position
-        this.position.y += this.velocity.y * deltaTime;
-        this.position.x += this.velocity.x * deltaTime;
-    
-        // Apply velocity to position
-        this.position.y += this.velocity.y;
-        this.position.x += this.velocity.x;
-    
-        // Collide with ground
-        if (this.position.y + playerHeight > canvas.height) {
+        // Applying velocity to position
+        this.position.y += this.velocity.y * deltaTime * 30;
+        this.position.x += this.velocity.x * deltaTime * 30;
+
+        // Colliding with ground
+        if (this.position.y + playerHeight >= canvas.height) {
             this.position.y = canvas.height - playerHeight;
-            this.velocity.y = 0; // Stop moving downwards
+            this.velocity.y = 0;
         }
-    
+
         // Jumping
         if (keys[this.keyBindings.up] && this.position.y + playerHeight >= canvas.height) {
-            this.velocity.y = -jumpSpeed; // jump speed
+            // negative because as position is higher on the screen, y value lowers.
+            this.velocity.y = -jumpSpeed;
         }
 
-        // Moving down faster
-        //if (keys[this.keyBindings.down] && this.position.y)
-    
-        // Apply horizontal friction
-        if (this.position.x >= 0 && this.position.x + playerWidth <= canvas.width) {
-            this.velocity.x *= 0.9; // some friction
-        }
-    
+        // Horizontal friction
+        this.velocity.x *= 0.9;
+
         // Move left and right
-        if (gamePaused == false) {
+        if (!gameOver) {
             if (keys[this.keyBindings.left]) {
-                this.latestDir = "left";
-                if (this.position.x > 0 && !checkIntersect(player, enemy)) {
-                    this.velocity.x = -baseSpeed;
+                this.swordDir = 'left';
+                if (!checkIntersect(this, this.opponent)) {
+                    if (this.velocity.x > -maxSpeed) {this.velocity.x -= speedRate}
                 }
             }
-            if (keys[this.keyBindings.right] && !checkIntersect(player, enemy)) {
-                this.latestDir = "right";
-                if (this.position.x + playerWidth < canvas.width) {
-                    this.velocity.x = baseSpeed;
+            if (keys[this.keyBindings.right]) {
+                this.swordDir = 'right';
+                if (!checkIntersect(this, this.opponent)) {
+                    if (this.velocity.x < maxSpeed) {this.velocity.x += speedRate}
                 }
             }
         }
         // Attack
-        if (swordUpdate) {
-            if (keys[player.keyBindings.attack]) {
-                c.fillStyle = playerSword.color;
-                playerSword.position.y = player.position.y;
-                if (player.latestDir == "right") {
-                    playerSword.position.x = player.position.x + playerWidth
-                    c.fillRect(playerSword.position.x, playerSword.position.y, playerWidth, playerHeight / 2)
-                }
-                else {
-                    playerSword.position.x = player.position.x - playerWidth
-                    c.fillRect(playerSword.position.x, playerSword.position.y, playerWidth, playerHeight / 2)
-                }
-                if (checkIntersect(playerSword, enemy)) {
-                    if (enemy.position.x < player.position.x) {
-                        enemy.position.x -= 100;
-                        enemy.velocity.x -= 10;
-                    }
-                    if (enemy.position.x > player.position.x) {
-                        enemy.position.x += 100;
-                        enemy.velocity.x += 10;
-                    }
-                }
-            }
-            // juggling
-            if (keys[player.keyBindings.juggle]) {
-                c.fillStyle = playerSword.color;
-                c.fillRect(player.position.x, player.position.y, playerWidth, -playerHeight/2);
-                if (
-                    // enemy is next to player
-                    enemy.position.x + playerWidth >= player.position.x &&
-                    enemy.position.x <= player.position.x + playerWidth &&
-                    // enemy's bottom is lower than swords tip
-                    enemy.position.y + playerHeight >= player.position.y - playerHeight/2
-                    ) {
-                    // if enemy's bottom is not too low
-                    if (enemy.position.y + playerHeight <= player.position.y - playerHeight * 0.2) {
-                        enemy.position.y -= 20;
-                        enemy.velocity.y -= 30;
-                    }
-                }
-            }
-            if (keys[enemy.keyBindings.attack]) {
-                c.fillStyle = playerSword.color;
-                enemySword.position.y = enemy.position.y
-                if (enemy.latestDir == "right") {
-                    enemySword.position.x = enemy.position.x + playerWidth;
-                    c.fillRect(enemySword.position.x, enemySword.position.y, playerWidth, playerHeight / 2)
-                }
-                else {
-                    enemySword.position.x = enemy.position.x - playerWidth;
-                    c.fillRect(enemySword.position.x, enemySword.position.y, playerWidth, playerHeight / 2);
-                }
-                if (checkIntersect(enemySword, player)) {
-                    if (player.position.x + playerWidth < enemy.position.x) {
-                        player.position.x -= 100;
-                        player.velocity.x -= 10;
-                    }
-                    if (player.position.x > enemy.position.x) {
-                        player.position.x += 100;
-                        player.velocity.x += 10;
-                    }
-                }
-            }
-        }
 
-
-        // checking if player has touched the edge:
-        if (player.position.x < 0 || player.position.x + playerWidth > canvas.width) {
-            player.velocity.x = 0;
-            player.position.x < 0 ? player.position.x = 0 : player.position.x = canvas.width;
-            writeText("enemy wins!", "red");
-            resetGame();
-            enemyScore++
-        }
-        //checking if enemy has touched the edge:
-        if (enemy.position.x < 0 || enemy.position.x + playerWidth > canvas.width) {
-            enemy.velocity.x = 0;
-            enemy.position.x < 0 ? enemy.position.x = 0 : enemy.position.x = canvas.width - playerWidth;
-            writeText("player wins!", "green");
-            playerScore++
+        // Checking for loss
+        if (this.position.x < 0 || this.position.x + playerWidth > canvas.width) {
+            this.opponent.score++;
+            writeText('player wins!', 'green');
             resetGame();
         }
         // check for collision
-        if (checkIntersect(player, enemy)) {
+        if (checkIntersect(this, this.opponent)) {
             if (!collision) {
                 // if the collision is above the person, 
                 if (Math.abs(player.position.y - enemy.position.y) >= playerHeight - 5) {
                     if (this.velocity.y <= 1 && this.position.y < this.opponent.position.y) {
                         console.log("ran");
                         this.velocity.y = 0;
-                        this.isOnTop = true;
                     }
                     else {
                         this.velocity.y *= -1;
                     }
                 }
                 else {
-                    player.velocity.x = player.velocity.x * -2;
-                    enemy.velocity.x = enemy.velocity.x * -2;
+                    this.velocity.x *= -1.5;
                 }
                 collision = true;
             }
@@ -205,7 +121,11 @@ class Sprite {
         }
         this.draw();
     }
-}    
+}
+
+
+
+// SETTING THE SPRITES
 
 const player = new Sprite({
     position: {
@@ -225,8 +145,9 @@ const player = new Sprite({
         juggle: 'e'
     },
     color: 'green',
-    latestDir: 'right',
-    isOnTop: false
+    width: playerWidth,
+    height: playerHeight,
+    score: 0
 });
 
 const enemy = new Sprite({
@@ -247,8 +168,9 @@ const enemy = new Sprite({
         juggle: 'i'
     },
     color: 'red',
-    latestDir: 'left',
-    isOnTop: false
+    width: playerWidth,
+    height: playerHeight,
+    score: 0
 });
 
 player.setOpponent(enemy);
@@ -265,7 +187,8 @@ const playerSword = new Sprite( {
     },
     color: 'gray',
     width: playerWidth,
-    height: playerHeight / 2
+    height: playerHeight / 2,
+    swordDir: 'right'
 });
 
 const enemySword = new Sprite( {
@@ -279,8 +202,13 @@ const enemySword = new Sprite( {
     },
     color: 'gray',
     width: playerWidth,
-    height: playerHeight / 2
+    height: playerHeight / 2,
+    swordDir: 'left'
 });
+
+
+
+// FUNCTIONS
 
 function checkIntersect(r1, r2) {
     return !(r2.position.x >= r1.position.x + r1.width ||
@@ -289,64 +217,23 @@ function checkIntersect(r1, r2) {
              r2.position.y + r2.height <= r1.position.y);
 }
 
-let lastTime = 0;
-
-function animate(currentTime) {
-    c.fillStyle = 'black';
-    c.fillRect(0, 0, canvas.width, canvas.height);
-    // setting the score
-    c.fillStyle = 'white';
-    c.font = "30px Arial";
-    c.fillText(playerScore, 25, 50);
-    c.fillText("|", 60, 48);
-    c.fillText(enemyScore, 90, 50);
-
-    if (showText == true) {
-        c.fillStyle = textColor;
-        c.textAlign = "center";
-        c.font = "30px Arial";
-        c.fillText(textToDisplay, canvas.width / 2, canvas.height / 2);
-        c.textAlign = "start"; // Reset text alignment back to "start"
-    }
-
-    // Calculate the amount of time since the last frame
-    let deltaTime = (currentTime - lastTime) / 1000.0;
-    lastTime = currentTime;
-
-    // Pass deltaTime to your update methods
-    player.update(deltaTime, false);
-    enemy.update(deltaTime, true);
-
-    window.requestAnimationFrame(animate);
-}
-
-// set the win text varibles:
-let showText = false;
-let textToDisplay = "";
-let textColor = "";
-
 function writeText(text, color, time) {
-    if (showText == false) {
-        if (time == null) {time = 2000}
-        showText = true;
-        textToDisplay = text;
-        textColor = color;
-        setTimeout(function() {
-            showText = false;
-            textToDisplay = "";
-        }, time);
-    }
+    if (time == null) {time = 2000}
+    textToDisplay = text;
+    textColor = color;
+    setTimeout(function() {
+        textToDisplay = "";
+    }, time);
 }
 
 function resetGame() {
-    gamePaused = true;
-    player.position.x = 0;
     player.velocity.x = 0;
-    player.position.y = 700;
-    player.velocity.y = 0;
-    enemy.position.x = canvas.width - playerWidth;
     enemy.velocity.x = 0;
+    player.position.x = 0;
+    enemy.position.x = canvas.width - playerWidth;
+    player.position.y = 700;
     enemy.position.y = 700;
+    player.velocity.y = 0;
     enemy.velocity.y = 0;
 
     // setting a timeout, waiting for existing text to disappear
@@ -366,6 +253,18 @@ function resetGame() {
     }, 2000);
 }
 
-// Start the game loop
-window.requestAnimationFrame(animate);
+let lastTime = Date.now();  // initialization of lastTime
 
+function animate() {
+    let currentTime = Date.now();
+    let deltaTime = (currentTime - lastTime) / 1000.0;
+    lastTime = currentTime;  // update lastTime after calculating deltaTime
+
+    c.fillStyle = 'black';
+    c.fillRect(0, 0, canvas.width, canvas.height);
+
+    player.update(deltaTime);
+    enemy.update(deltaTime);
+
+    requestAnimationFrame(animate);
+}
