@@ -2,10 +2,12 @@
 const canvas = document.getElementById('canvas');
 const c = canvas.getContext('2d');
 
-const gravity = 0.005 * canvas.height;
+const gravity = 0.01 * canvas.height;
+const fallAcceleration = 0.005 * canvas.height
+const maxFallSpeed = 0.05 * canvas.height;
 const maxSpeed = 0.05 * canvas.width;
 const speedRate = 0.005 * canvas.width;
-const jumpSpeed = 0.15 * canvas.height;
+const jumpSpeed = 0.20 * canvas.height;
 
 const playerWidth = 50;
 const playerHeight = 150;
@@ -14,14 +16,16 @@ const playerHeight = 150;
 let gameOver = false;
 let keys = {}
 let collision = false;
+let swordCooldown = false;
 
 // SETUP
 canvas.width = window.innerWidth - 20;
 canvas.height = window.innerHeight - 20;
 c.fillRect(0, 0, canvas.width, canvas.height);
 
-window.addEventListener('keydown', function(event) {
+window.addEventListener('keypress', function(event) {
     keys[event.key] = true;
+    swordCooldown = true;
 });
 
 window.addEventListener('keyup', function(event) {
@@ -33,7 +37,7 @@ requestAnimationFrame(animate);
 
 // CLASSES
 class Sprite {
-    constructor({position, velocity, keyBindings, color, width, height, opponent, swordDir, score}) {
+    constructor({position, velocity, keyBindings, color, width, height, opponent, swordDir, score, parent}) {
         this.position = position;
         this.velocity = velocity;
         this.keyBindings = keyBindings;
@@ -42,6 +46,7 @@ class Sprite {
         this.height = height;
         this.swordDir = swordDir;
         this.score = score;
+        this.parent = parent;
     }
     setOpponent(opponent) {
         this.opponent = opponent;
@@ -52,9 +57,21 @@ class Sprite {
         c.fillRect(this.position.x, this.position.y, this.width, this.height);
     }
 
+
+
+
+
+
+
+
+
+
+
     update(deltaTime) {
         // Constant gravity
-        this.velocity.y += gravity * deltaTime * 30;
+        if (this.velocity.y <= maxFallSpeed) {
+            this.velocity.y <= 0 ? this.velocity.y += gravity * deltaTime * 30 : this.velocity.y += fallAcceleration * deltaTime * 30;
+        }
 
         // Applying velocity to position
         this.position.y += this.velocity.y * deltaTime * 30;
@@ -91,7 +108,26 @@ class Sprite {
             }
         }
         // Attack
-
+        if (keys[this.keyBindings.attack] && swordCooldown) {
+            let swordX;
+            let swordY;
+            if (this.swordDir == 'left') {
+                swordX = this.position.x - this.width;
+                swordY = this.position.y;
+                c.fillStyle = 'gray'
+                c.fillRect(swordX, swordY, this.width, this.height / 2);
+            }
+            if (this.swordDir == 'right') {
+                swordX = this.position.x + this.width;
+                swordY = this.position.y;
+                c.fillStyle = 'gray';
+                c.fillRect(swordX, swordY, this.width, this.height / 2);
+            }
+            if (checkSwordIntersect(this.opponent, swordX, swordY, this.width, this.height/2)) {
+                this.position.x < this.opponent.position.x ? this.opponent.velocity.x += 10 : this.opponent.velocity.x -= 10;
+                this.opponent.velocity.y -= 2;
+            }
+        }
         // Checking for loss
         if (this.position.x < 0 || this.position.x + playerWidth > canvas.width) {
             this.opponent.score++;
@@ -100,11 +136,9 @@ class Sprite {
         }
         // check for collision
         if (checkIntersect(this, this.opponent)) {
-            console.log("COLLISION")
             // if the collision is above the person, 
             if (Math.abs(player.position.y - enemy.position.y) >= playerHeight - 5) {
                 if (this.velocity.y <= 1 && this.position.y < this.opponent.position.y) {
-                    console.log("ran");
                     this.velocity.y = 0;
                 }
                 else {
@@ -113,9 +147,7 @@ class Sprite {
                 }
             }
             else {
-                console.log("run")
                 if (this.position.x > this.opponent.position.x) {
-                    console.log("bruh ran")
                     this.position.x = this.opponent.position.x + playerWidth;
                 }
                 this.velocity.x *= -1.5;
@@ -123,6 +155,16 @@ class Sprite {
         }
         this.draw();
     }
+
+
+
+
+
+
+
+
+
+
 }
 
 
@@ -149,7 +191,8 @@ const player = new Sprite({
     color: 'green',
     width: playerWidth,
     height: playerHeight,
-    score: 0
+    score: 0,
+    swordDir: 'right'
 });
 
 const enemy = new Sprite({
@@ -172,42 +215,12 @@ const enemy = new Sprite({
     color: 'red',
     width: playerWidth,
     height: playerHeight,
-    score: 0
+    score: 0,
+    swordDir: 'left'
 });
 
 player.setOpponent(enemy);
 enemy.setOpponent(player);
-
-const playerSword = new Sprite( {
-    position: { 
-        x: -1,
-        y: -1
-    },
-    velocity: {
-        x: 0,
-        y: 0
-    },
-    color: 'gray',
-    width: playerWidth,
-    height: playerHeight / 2,
-    swordDir: 'right'
-});
-
-const enemySword = new Sprite( {
-    position: {
-        x: 0,
-        y: 0
-    },
-    velocity: {
-        x: 0,
-        y: 0
-    },
-    color: 'gray',
-    width: playerWidth,
-    height: playerHeight / 2,
-    swordDir: 'left'
-});
-
 
 
 // FUNCTIONS
@@ -217,6 +230,13 @@ function checkIntersect(r1, r2) {
              r2.position.x + r2.width <= r1.position.x ||
              r2.position.y >= r1.position.y + r1.height ||
              r2.position.y + r2.height <= r1.position.y);
+}
+
+function checkSwordIntersect(r1, x, y, width, height) {
+    return !(x >= r1.position.x + r1.width ||
+        x + width <= r1.position.x ||
+        y >= r1.position.y + r1.height ||
+        y + height <= r1.position.y);
 }
 
 function writeText(text, color, time) {
@@ -240,6 +260,7 @@ function resetGame() {
 
     // setting a timeout, waiting for existing text to disappear
     // absolute monstrosity... yikes
+    console.log("text")
     setTimeout(() => {
         writeText("3", "white", 1000);
         setTimeout(() => {
