@@ -16,20 +16,30 @@ const playerHeight = 150;
 let gameOver = false;
 let keys = {}
 let collision = false;
-let swordCooldown = false;
 
 // SETUP
 canvas.width = window.innerWidth - 20;
 canvas.height = window.innerHeight - 20;
 c.fillRect(0, 0, canvas.width, canvas.height);
 
-window.addEventListener('keypress', function(event) {
+window.addEventListener('keydown', function(event) {
     keys[event.key] = true;
-    swordCooldown = true;
 });
 
 window.addEventListener('keyup', function(event) {
     keys[event.key] = false;
+    if (event.key === player.keyBindings.up) {
+        player.jumpCooldown = false;
+    }
+    if (event.key === enemy.keyBindings.up) {
+        enemy.jumpCooldown = false;
+    }
+    if (event.key === player.keyBindings.attack) {
+        player.swordCooldown = false;
+    }
+    if (event.key === enemy.keyBindings.attack) {
+        enemy.swordCooldown = false;
+    }
 });
 
 // This line calls the animate function, which then starts the game
@@ -37,7 +47,7 @@ requestAnimationFrame(animate);
 
 // CLASSES
 class Sprite {
-    constructor({position, velocity, keyBindings, color, width, height, opponent, swordDir, score, parent}) {
+    constructor({position, velocity, keyBindings, color, width, height, opponent, swordDir, score, parent, jumps, jumpCooldown, swordCooldown}) {
         this.position = position;
         this.velocity = velocity;
         this.keyBindings = keyBindings;
@@ -47,6 +57,9 @@ class Sprite {
         this.swordDir = swordDir;
         this.score = score;
         this.parent = parent;
+        this.jumps = jumps;
+        this.jumpCooldown = jumpCooldown;
+        this.swordCooldown = swordCooldown;
     }
     setOpponent(opponent) {
         this.opponent = opponent;
@@ -78,15 +91,29 @@ class Sprite {
         this.position.x += this.velocity.x * deltaTime * 30;
 
         // Colliding with ground
-        if (this.position.y + playerHeight >= canvas.height) {
+        //console.log(Math.floor(this.position.y) + playerHeight)
+        //console.log(canvas.height)
+        if (Math.floor(this.position.y) + playerHeight >= canvas.height) {
             this.position.y = canvas.height - playerHeight;
             this.velocity.y = 0;
+            this.jumps = 2;
+            this.jumpCooldown = false;
         }
 
         // Jumping
-        if (keys[this.keyBindings.up] && this.position.y + playerHeight >= canvas.height) {
-            // negative because as position is higher on the screen, y value lowers.
-            this.velocity.y = -jumpSpeed;
+        if (keys[this.keyBindings.up] && !this.jumpCooldown) {
+            // if touching the ground
+            if (this.position.y + playerHeight >= canvas.height) {
+                this.jumpCooldown = true;
+                // negative because as position is higher on the screen, y value lowers.
+                this.velocity.y -= jumpSpeed;
+                this.jumps--;
+            }
+            else if (this.jumps > 0) {
+                this.jumpCooldown = true;
+                this.velocity.y -= jumpSpeed;
+                this.jumps--;
+            }
         }
 
         // Horizontal friction
@@ -108,24 +135,26 @@ class Sprite {
             }
         }
         // Attack
-        if (keys[this.keyBindings.attack] && swordCooldown) {
+        if (keys[this.keyBindings.attack] && !this.swordCooldown) {
             let swordX;
             let swordY;
             if (this.swordDir == 'left') {
+                setTimeout(() => {this.swordCooldown = true}, 100);
                 swordX = this.position.x - this.width;
                 swordY = this.position.y;
                 c.fillStyle = 'gray'
                 c.fillRect(swordX, swordY, this.width, this.height / 2);
             }
             if (this.swordDir == 'right') {
+                setTimeout(() => {this.swordCooldown = true}, 100)
                 swordX = this.position.x + this.width;
                 swordY = this.position.y;
                 c.fillStyle = 'gray';
                 c.fillRect(swordX, swordY, this.width, this.height / 2);
             }
             if (checkSwordIntersect(this.opponent, swordX, swordY, this.width, this.height/2)) {
-                this.position.x < this.opponent.position.x ? this.opponent.velocity.x += 10 : this.opponent.velocity.x -= 10;
-                this.opponent.velocity.y -= 2;
+                this.position.x < this.opponent.position.x ? this.opponent.velocity.x += 50 : this.opponent.velocity.x -= 50;
+                this.opponent.velocity.y -= 8;
             }
         }
         // Checking for loss
@@ -192,7 +221,10 @@ const player = new Sprite({
     width: playerWidth,
     height: playerHeight,
     score: 0,
-    swordDir: 'right'
+    swordDir: 'right',
+    jumps: 2,
+    jumpCooldown: false,
+    swordCooldown: false
 });
 
 const enemy = new Sprite({
@@ -216,7 +248,10 @@ const enemy = new Sprite({
     width: playerWidth,
     height: playerHeight,
     score: 0,
-    swordDir: 'left'
+    swordDir: 'left',
+    jumps: 2,
+    jumpCooldown: false,
+    swordCooldown: false
 });
 
 player.setOpponent(enemy);
