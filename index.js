@@ -2,12 +2,12 @@
 const canvas = document.getElementById('canvas');
 const c = canvas.getContext('2d');
 
-const gravity = 0.01 * canvas.height;
-const fallAcceleration = 0.005 * canvas.height
-const maxFallSpeed = 0.05 * canvas.height;
+const gravity = 0.015 * canvas.height;
+const fallAcceleration = 0.01 * canvas.height
+const maxFallSpeed = 0.10 * canvas.height;
 const maxSpeed = 0.05 * canvas.width;
 const speedRate = 0.005 * canvas.width;
-const jumpSpeed = 0.20 * canvas.height;
+const jumpSpeed = 0.16 * canvas.height;
 
 const playerWidth = 50;
 const playerHeight = 150;
@@ -106,13 +106,13 @@ class Sprite {
             if (this.position.y + playerHeight >= canvas.height) {
                 this.jumpCooldown = true;
                 // negative because as position is higher on the screen, y value lowers.
-                this.velocity.y -= jumpSpeed;
+                this.velocity.y = -jumpSpeed;
                 this.jumps--;
             }
             else if (this.jumps > 0) {
                 this.jumpCooldown = true;
-                this.velocity.y -= jumpSpeed;
-                this.jumps--;
+                this.velocity.y = -jumpSpeed;
+                this.jumps -= 2;
             }
         }
 
