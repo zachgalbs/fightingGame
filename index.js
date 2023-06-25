@@ -7,7 +7,7 @@ const fallAcceleration = 0.01 * canvas.height
 const maxFallSpeed = 0.10 * canvas.height;
 const maxSpeed = 0.05 * canvas.width;
 const speedRate = 0.005 * canvas.width;
-const jumpSpeed = 0.16 * canvas.height;
+const jumpSpeed = 0.3 * canvas.height;
 
 const playerWidth = 50;
 const playerHeight = 150;
@@ -16,10 +16,13 @@ const playerHeight = 150;
 let gameOver = false;
 let keys = {}
 let collision = false;
+let showText = false;
 
 // SETUP
 canvas.width = window.innerWidth - 20;
+const xScaling = canvas.width / 1900;
 canvas.height = window.innerHeight - 20;
+const yScaling = canvas.height / 1041
 c.fillRect(0, 0, canvas.width, canvas.height);
 
 window.addEventListener('keydown', function(event) {
@@ -83,16 +86,14 @@ class Sprite {
     update(deltaTime) {
         // Constant gravity
         if (this.velocity.y <= maxFallSpeed) {
-            this.velocity.y <= 0 ? this.velocity.y += gravity * deltaTime * 30 : this.velocity.y += fallAcceleration * deltaTime * 30;
+            this.velocity.y <= 0 ? this.velocity.y += gravity * deltaTime * 30: this.velocity.y += fallAcceleration * deltaTime * 30;
         }
 
         // Applying velocity to position
-        this.position.y += this.velocity.y * deltaTime * 30;
-        this.position.x += this.velocity.x * deltaTime * 30;
+        this.position.y += this.velocity.y * deltaTime * 30 * yScaling;
+        this.position.x += this.velocity.x * deltaTime * 30 * xScaling;
 
         // Colliding with ground
-        //console.log(Math.floor(this.position.y) + playerHeight)
-        //console.log(canvas.height)
         if (Math.floor(this.position.y) + playerHeight >= canvas.height) {
             this.position.y = canvas.height - playerHeight;
             this.velocity.y = 0;
@@ -112,7 +113,7 @@ class Sprite {
             else if (this.jumps > 0) {
                 this.jumpCooldown = true;
                 this.velocity.y = -jumpSpeed;
-                this.jumps -= 2;
+                this.jumps -= 1;
             }
         }
 
@@ -159,13 +160,13 @@ class Sprite {
         }
         // Checking for loss
         if (this.position.x < 0 || this.position.x + playerWidth > canvas.width) {
+            writeText('player wins!', 'green', 1000);
             this.opponent.score++;
-            writeText('player wins!', 'green');
             resetGame();
         }
         // check for collision
         if (checkIntersect(this, this.opponent)) {
-            // if the collision is above the person, 
+            // if the collision is above the person,
             if (Math.abs(player.position.y - enemy.position.y) >= playerHeight - 5) {
                 if (this.velocity.y <= 1 && this.position.y < this.opponent.position.y) {
                     this.velocity.y = 0;
@@ -274,16 +275,25 @@ function checkSwordIntersect(r1, x, y, width, height) {
         y + height <= r1.position.y);
 }
 
+let textToDisplay = "";
+let textColor = "";
+
 function writeText(text, color, time) {
-    if (time == null) {time = 2000}
-    textToDisplay = text;
-    textColor = color;
-    setTimeout(function() {
-        textToDisplay = "";
-    }, time);
+    console.log("bruh")
+    if (showText == false) {
+        if (time == null) {time = 2000}
+        showText = true;
+        textToDisplay = text;
+        textColor = color;
+        setTimeout(function() {
+            showText = false;
+            textToDisplay = "";
+        }, time);
+    }
 }
 
 function resetGame() {
+    gameOver = true;
     player.velocity.x = 0;
     enemy.velocity.x = 0;
     player.position.x = 0;
@@ -304,7 +314,7 @@ function resetGame() {
                 writeText("1", "white", 1000);
                 setTimeout(() => {
                     writeText("Fight!", "red", 1000);
-                    gamePaused = false;
+                    gameOver = false;
                 }, 1000);
             }, 1000);
         }, 1000);
@@ -320,6 +330,20 @@ function animate() {
 
     c.fillStyle = 'black';
     c.fillRect(0, 0, canvas.width, canvas.height);
+
+    c.fillStyle = 'white';
+    c.font = "30px Arial";
+    c.fillText(player.score, 25, 50);
+    c.fillText("|", 60, 48);
+    c.fillText(enemy.score, 90, 50);
+
+    if (showText == true) {
+        c.fillStyle = textColor;
+        c.textAlign = "center";
+        c.font = "30px Arial";
+        c.fillText(textToDisplay, canvas.width / 2, canvas.height / 2);
+        c.textAlign = "start"; // Reset text alignment back to "start"
+    }
 
     player.update(deltaTime);
     enemy.update(deltaTime);
